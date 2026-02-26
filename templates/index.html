@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>香盤ジェネレーター</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            background-color: #000;
+            color: #fff;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+        
+        .subtitle {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 40px;
+        }
+        
+        .upload-area {
+            border: 2px dashed #444;
+            border-radius: 8px;
+            padding: 40px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+        
+        .upload-area:hover {
+            border-color: #666;
+        }
+        
+        .upload-area.dragover {
+            border-color: #fff;
+            background-color: #111;
+        }
+        
+        input[type="file"] {
+            display: none;
+        }
+        
+        .upload-btn {
+            display: inline-block;
+            background-color: #fff;
+            color: #000;
+            padding: 12px 30px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: opacity 0.3s;
+        }
+        
+        .upload-btn:hover {
+            opacity: 0.8;
+        }
+        
+        .file-name {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+        
+        .submit-btn {
+            background-color: transparent;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 12px 40px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin-top: 20px;
+            transition: all 0.3s;
+        }
+        
+        .submit-btn:hover:not(:disabled) {
+            background-color: #fff;
+            color: #000;
+        }
+        
+        .submit-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        
+        .loading {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .loading.active {
+            display: block;
+        }
+        
+        .spinner {
+            border: 2px solid #333;
+            border-top: 2px solid #fff;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .notice {
+            margin-top: 30px;
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
+        .error {
+            color: #ff6666;
+            margin-top: 15px;
+        }
+        
+        .success {
+            color: #66ff66;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>香盤ジェネレーター</h1>
+        <p class="subtitle">docx脚本 → 香盤CSV</p>
+        
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="upload-area" id="dropArea">
+                <label for="fileInput" class="upload-btn">ファイルを選択</label>
+                <input type="file" id="fileInput" name="file" accept=".docx">
+                <p class="file-name" id="fileName">またはここにドラッグ＆ドロップ</p>
+            </div>
+            
+            <button type="submit" class="submit-btn" id="submitBtn" disabled>変換してダウンロード</button>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>処理中...</p>
+        </div>
+        
+        <div id="message"></div>
+        
+        <p class="notice">※ アップロードされたデータは保存されません<br>処理後は即削除されます</p>
+    </div>
+    
+    <script>
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const submitBtn = document.getElementById('submitBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const loading = document.getElementById('loading');
+        const message = document.getElementById('message');
+        
+        // ファイル選択
+        fileInput.addEventListener('change', function() {
+            if (this.files.length > 0) {
+                fileName.textContent = this.files[0].name;
+                submitBtn.disabled = false;
+                message.innerHTML = '';
+            }
+        });
+        
+        // ドラッグ＆ドロップ
+        dropArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+        
+        dropArea.addEventListener('dragleave', function() {
+            this.classList.remove('dragover');
+        });
+        
+        dropArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                if (files[0].name.endsWith('.docx')) {
+                    fileInput.files = files;
+                    fileName.textContent = files[0].name;
+                    submitBtn.disabled = false;
+                    message.innerHTML = '';
+                } else {
+                    message.innerHTML = '<p class="error">docxファイルのみ対応しています</p>';
+                }
+            }
+        });
+        
+        // フォーム送信
+        uploadForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            submitBtn.disabled = true;
+            loading.classList.add('active');
+            message.innerHTML = '';
+            
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    // CSVダウンロード
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'kouban.csv';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                    
+                    message.innerHTML = '<p class="success">ダウンロード完了</p>';
+                    fileInput.value = '';
+                    fileName.textContent = 'またはここにドラッグ＆ドロップ';
+                } else {
+                    const data = await response.json();
+                    message.innerHTML = `<p class="error">${data.error || 'エラーが発生しました'}</p>`;
+                }
+            } catch (error) {
+                message.innerHTML = '<p class="error">通信エラーが発生しました</p>';
+            } finally {
+                loading.classList.remove('active');
+                submitBtn.disabled = fileInput.files.length === 0;
+            }
+        });
+    </script>
+</body>
+</html>
