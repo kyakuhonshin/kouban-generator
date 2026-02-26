@@ -29,133 +29,42 @@
             text-align: center;
         }
         
-        .version {
-            position: fixed;
-            top: 20px;
-            right: 24px;
-            font-size: 0.75rem;
-            color: #555;
-            letter-spacing: 0.05em;
-        }
-        
         h1 {
-            font-size: 2rem;
+            font-size: 1.8rem;
             font-weight: 600;
             letter-spacing: 0.08em;
-            margin-bottom: 16px;
-        }
-        
-        .catchphrase {
-            font-size: 1.1rem;
-            font-weight: 400;
-            letter-spacing: 0.05em;
-            margin-bottom: 8px;
-            color: #fff;
-        }
-        
-        .subtitle {
-            font-size: 0.85rem;
-            color: #777;
             margin-bottom: 48px;
-            line-height: 1.8;
         }
         
-        .info-block {
-            background-color: rgba(255, 255, 255, 0.03);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 8px;
-            padding: 28px 32px;
-            margin-bottom: 32px;
-            text-align: left;
-        }
-        
-        .info-block ul {
-            list-style: none;
-            padding: 0;
-        }
-        
-        .info-block li {
-            font-size: 0.9rem;
-            color: #888;
-            margin-bottom: 12px;
-            padding-left: 20px;
-            position: relative;
-        }
-        
-        .info-block li:last-child {
-            margin-bottom: 0;
-        }
-        
-        .info-block li::before {
-            content: "・";
-            position: absolute;
-            left: 0;
-            color: #666;
-        }
-        
-        .security-block {
-            background-color: rgba(255, 255, 255, 0.02);
-            border: 1px solid rgba(255, 255, 255, 0.06);
-            border-radius: 8px;
-            padding: 24px 28px;
-            margin-bottom: 40px;
-            text-align: left;
-        }
-        
-        .security-title {
-            font-size: 0.85rem;
-            color: #aaa;
-            margin-bottom: 12px;
-            font-weight: 500;
-        }
-        
-        .security-block ul {
-            list-style: none;
-            padding: 0;
-        }
-        
-        .security-block li {
-            font-size: 0.85rem;
-            color: #777;
-            margin-bottom: 8px;
-            padding-left: 16px;
-            position: relative;
-        }
-        
-        .security-block li::before {
-            content: "・";
-            position: absolute;
-            left: 0;
-            color: #555;
-        }
-        
-        .format-note {
-            font-size: 0.8rem;
-            color: #666;
+        .upload-section {
             margin-bottom: 24px;
-            padding: 12px 16px;
-            background-color: rgba(255, 255, 255, 0.02);
-            border-radius: 4px;
-            display: inline-block;
+        }
+        
+        .upload-label {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 20px;
+            display: block;
         }
         
         .upload-area {
-            border: 1px dashed rgba(255, 255, 255, 0.2);
+            border: 2px dashed rgba(255, 255, 255, 0.3);
             border-radius: 8px;
-            padding: 48px 40px;
-            margin-bottom: 24px;
+            padding: 56px 40px;
+            margin-bottom: 16px;
             transition: border-color 0.3s, background-color 0.3s;
             cursor: pointer;
-        }
-        
-        .upload-area:hover {
-            border-color: rgba(255, 255, 255, 0.4);
             background-color: rgba(255, 255, 255, 0.02);
         }
         
-        .upload-area.dragover {
-            border-color: rgba(255, 255, 255, 0.6);
+        .upload-area:hover {
+            border-color: rgba(255, 255, 255, 0.5);
             background-color: rgba(255, 255, 255, 0.04);
+        }
+        
+        .upload-area.dragover {
+            border-color: rgba(255, 255, 255, 0.7);
+            background-color: rgba(255, 255, 255, 0.06);
         }
         
         input[type="file"] {
@@ -166,11 +75,11 @@
             display: inline-block;
             background-color: #fff;
             color: #000;
-            padding: 14px 36px;
+            padding: 16px 40px;
             border-radius: 4px;
             cursor: pointer;
             font-weight: 500;
-            font-size: 0.95rem;
+            font-size: 1rem;
             letter-spacing: 0.02em;
             transition: opacity 0.25s;
         }
@@ -182,7 +91,7 @@
         .file-name {
             margin-top: 16px;
             font-size: 0.9rem;
-            color: #666;
+            color: #888;
         }
         
         .file-size-error {
@@ -196,32 +105,59 @@
             display: block;
         }
         
-        .submit-btn {
-            background-color: transparent;
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 14px 48px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.95rem;
-            letter-spacing: 0.02em;
-            transition: all 0.25s;
+        .action-section {
+            margin-bottom: 48px;
+            min-height: 60px;
         }
         
-        .submit-btn:hover:not(:disabled) {
+        .convert-btn {
             background-color: #fff;
             color: #000;
-            border-color: #fff;
+            border: none;
+            padding: 16px 48px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            transition: opacity 0.25s;
+            display: none;
         }
         
-        .submit-btn:disabled {
-            opacity: 0.3;
-            cursor: not-allowed;
+        .convert-btn:hover {
+            opacity: 0.85;
+        }
+        
+        .convert-btn.active {
+            display: inline-block;
+        }
+        
+        .download-btn {
+            background-color: #fff;
+            color: #000;
+            border: none;
+            padding: 16px 48px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            transition: opacity 0.25s;
+            display: none;
+            text-decoration: none;
+        }
+        
+        .download-btn:hover {
+            opacity: 0.85;
+        }
+        
+        .download-btn.active {
+            display: inline-block;
         }
         
         .loading {
             display: none;
-            margin-top: 32px;
+            padding: 16px;
         }
         
         .loading.active {
@@ -254,8 +190,71 @@
             color: #666;
         }
         
+        .info-section {
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 32px;
+            margin-bottom: 40px;
+            text-align: left;
+        }
+        
+        .info-title {
+            font-size: 0.95rem;
+            color: #aaa;
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+        
+        .info-section p {
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 12px;
+            line-height: 1.7;
+        }
+        
+        .info-section p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .security-section {
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            padding: 24px 28px;
+            margin-bottom: 40px;
+            text-align: left;
+        }
+        
+        .security-title {
+            font-size: 0.85rem;
+            color: #999;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+        
+        .security-section ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .security-section li {
+            font-size: 0.85rem;
+            color: #777;
+            margin-bottom: 8px;
+            padding-left: 16px;
+            position: relative;
+        }
+        
+        .security-section li::before {
+            content: "・";
+            position: absolute;
+            left: 0;
+            color: #555;
+        }
+        
         .message {
-            margin-top: 24px;
+            margin: 16px 0;
             font-size: 0.9rem;
         }
         
@@ -279,13 +278,9 @@
             margin-top: 8px;
         }
         
-        .success {
-            color: #8c8;
-        }
-        
         footer {
             margin-top: auto;
-            padding-top: 60px;
+            padding-top: 40px;
             font-size: 0.75rem;
             color: #555;
             letter-spacing: 0.02em;
@@ -306,60 +301,49 @@
         .footer-links a:hover {
             color: #999;
         }
-        
-        .company-note {
-            color: #444;
-            margin-top: 8px;
-        }
     </style>
 </head>
 <body>
-    <div class="version">β ver 0.1</div>
-    
     <div class="container">
         <h1>香盤ジェネレーター</h1>
-        <p class="catchphrase">助監督の時間を、少しだけ取り戻す。</p>
-        <p class="subtitle">映画・ドラマ脚本（Word形式）を香盤表（CSV）に変換するベータ版サービスです。</p>
         
-        <div class="info-block">
-            <ul>
-                <li>現在ベータ版です</li>
-                <li>Word形式（.docx）の脚本をアップロードしてください</li>
-                <li>生成されたCSVはExcelやGoogleスプレッドシートで編集してください</li>
-                <li>アップロードされたデータは保存されません（処理後即削除）</li>
-            </ul>
-        </div>
-        
-        <div class="security-block">
-            <div class="security-title">セキュリティについて</div>
-            <ul>
-                <li>本サービスはアップロードされたファイルを保存・蓄積しません</li>
-                <li>変換処理完了後、自動的に削除されます</li>
-                <li>データベースへの保存は行っていません</li>
-                <li>通信はHTTPSにより暗号化されています</li>
-            </ul>
-        </div>
-        
-        <div class="format-note">対応形式：縦書きWord脚本（柱形式）／ファイルサイズ：20MBまで</div>
-        
-        <form id="uploadForm" enctype="multipart/form-data">
+        <div class="upload-section">
+            <span class="upload-label">Word脚本（.docx）をアップロード</span>
             <div class="upload-area" id="dropArea">
-                <label for="fileInput" class="upload-btn">ファイルを選択</label>
                 <input type="file" id="fileInput" name="file" accept=".docx">
+                <label for="fileInput" class="upload-btn">ファイルを選択</label>
                 <p class="file-name" id="fileName">またはここにドラッグ＆ドロップ</p>
                 <p class="file-size-error" id="fileSizeError">ファイルサイズは20MBまでです</p>
             </div>
-            
-            <button type="submit" class="submit-btn" id="submitBtn" disabled>変換してダウンロード</button>
-        </form>
-        
-        <div class="loading" id="loading">
-            <div class="spinner"></div>
-            <p>解析中...</p>
-            <p class="eta">通常10〜30秒</p>
         </div>
         
-        <div id="message" class="message"></div>
+        <div class="action-section">
+            <button type="button" class="convert-btn" id="convertBtn">変換</button>
+            <a href="#" class="download-btn" id="downloadBtn">CSVダウンロード</a>
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>解析中...</p>
+                <p class="eta">通常10〜30秒</p>
+            </div>
+            <div id="message" class="message"></div>
+        </div>
+        
+        <div class="info-section">
+            <div class="info-title">このサービスについて</div>
+            <p>映画・ドラマ脚本（Word形式）を香盤表（CSV）に変換するサービスです。</p>
+            <p>現在ベータ版です。生成されたCSVはExcelやGoogleスプレッドシートで編集してください。</p>
+            <p>対応：縦書きWord脚本（柱形式）</p>
+        </div>
+        
+        <div class="security-section">
+            <div class="security-title">セキュリティについて</div>
+            <ul>
+                <li>アップロードされたファイルは保存・蓄積されません</li>
+                <li>変換処理完了後に自動削除されます</li>
+                <li>データベースへの保存は行っていません</li>
+                <li>通信はHTTPSで暗号化されています</li>
+            </ul>
+        </div>
     </div>
     
     <footer>
@@ -368,7 +352,6 @@
             <a href="/privacy">プライバシーポリシー</a>
         </div>
         <div>© MEW Creators</div>
-        <div class="company-note">制作会社様でのご利用も可能です</div>
     </footer>
     
     <script>
@@ -376,12 +359,13 @@
         const fileInput = document.getElementById('fileInput');
         const fileName = document.getElementById('fileName');
         const fileSizeError = document.getElementById('fileSizeError');
-        const submitBtn = document.getElementById('submitBtn');
-        const uploadForm = document.getElementById('uploadForm');
+        const convertBtn = document.getElementById('convertBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
         const loading = document.getElementById('loading');
         const message = document.getElementById('message');
         
         const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+        let convertedBlob = null;
         
         function validateFile(file) {
             if (!file.name.endsWith('.docx')) {
@@ -393,7 +377,17 @@
             return { valid: true };
         }
         
+        function resetUI() {
+            convertBtn.classList.remove('active');
+            downloadBtn.classList.remove('active');
+            loading.classList.remove('active');
+            message.innerHTML = '';
+            convertedBlob = null;
+        }
+        
         fileInput.addEventListener('change', function() {
+            resetUI();
+            
             if (this.files.length > 0) {
                 const file = this.files[0];
                 const validation = validateFile(file);
@@ -401,12 +395,11 @@
                 if (validation.valid) {
                     fileName.textContent = file.name;
                     fileSizeError.classList.remove('active');
-                    submitBtn.disabled = false;
-                    message.innerHTML = '';
+                    convertBtn.classList.add('active');
                 } else if (validation.error === 'size') {
                     fileName.textContent = 'またはここにドラッグ＆ドロップ';
                     fileSizeError.classList.add('active');
-                    submitBtn.disabled = true;
+                    convertBtn.classList.remove('active');
                     fileInput.value = '';
                 }
             }
@@ -424,6 +417,7 @@
         dropArea.addEventListener('drop', function(e) {
             e.preventDefault();
             this.classList.remove('dragover');
+            resetUI();
             
             const files = e.dataTransfer.files;
             if (files.length > 0) {
@@ -434,8 +428,7 @@
                     fileInput.files = files;
                     fileName.textContent = file.name;
                     fileSizeError.classList.remove('active');
-                    submitBtn.disabled = false;
-                    message.innerHTML = '';
+                    convertBtn.classList.add('active');
                 } else if (validation.error === 'docx') {
                     message.innerHTML = `
                         <div class="error">
@@ -450,13 +443,13 @@
             }
         });
         
-        uploadForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
+        convertBtn.addEventListener('click', async function() {
+            if (!fileInput.files.length) return;
             
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
             
-            submitBtn.disabled = true;
+            convertBtn.classList.remove('active');
             loading.classList.add('active');
             message.innerHTML = '';
             
@@ -467,22 +460,13 @@
                 });
                 
                 if (response.ok) {
-                    const blob = await response.blob();
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'kouban.csv';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
-                    
-                    message.innerHTML = '<p class="success">ダウンロード完了</p>';
-                    fileInput.value = '';
-                    fileName.textContent = 'またはここにドラッグ＆ドロップ';
+                    convertedBlob = await response.blob();
+                    loading.classList.remove('active');
+                    downloadBtn.classList.add('active');
                 } else {
                     const data = await response.json();
                     const errorMsg = data.error || 'エラーが発生しました';
+                    loading.classList.remove('active');
                     message.innerHTML = `
                         <div class="error">
                             <div class="error-title">処理できませんでした</div>
@@ -490,18 +474,42 @@
                             <div class="error-hint">対応形式：縦書きWord脚本（柱形式）<br>ファイルサイズ：20MBまで</div>
                         </div>
                     `;
+                    fileInput.value = '';
+                    fileName.textContent = 'またはここにドラッグ＆ドロップ';
                 }
             } catch (error) {
+                loading.classList.remove('active');
                 message.innerHTML = `
                     <div class="error">
                         <div class="error-title">通信エラーが発生しました</div>
                         <div>時間をおいて再度お試しください</div>
                     </div>
                 `;
-            } finally {
-                loading.classList.remove('active');
-                submitBtn.disabled = fileInput.files.length === 0;
+                fileInput.value = '';
+                fileName.textContent = 'またはここにドラッグ＆ドロップ';
             }
+        });
+        
+        downloadBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (!convertedBlob) return;
+            
+            const url = window.URL.createObjectURL(convertedBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'kouban.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            
+            // ダウンロード後、リセット
+            setTimeout(() => {
+                downloadBtn.classList.remove('active');
+                fileInput.value = '';
+                fileName.textContent = 'またはここにドラッグ＆ドロップ';
+                convertedBlob = null;
+            }, 1000);
         });
     </script>
 </body>
