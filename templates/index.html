@@ -14,48 +14,102 @@
         body {
             background-color: #000;
             color: #fff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Noto Sans JP", sans-serif;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            padding: 20px;
+            padding: 60px 20px 40px;
+            line-height: 1.6;
         }
         
         .container {
-            max-width: 600px;
+            max-width: 640px;
             width: 100%;
             text-align: center;
         }
         
+        .version {
+            position: fixed;
+            top: 20px;
+            right: 24px;
+            font-size: 0.75rem;
+            color: #555;
+            letter-spacing: 0.05em;
+        }
+        
         h1 {
             font-size: 2rem;
-            margin-bottom: 10px;
-            letter-spacing: 2px;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            margin-bottom: 16px;
+        }
+        
+        .catchphrase {
+            font-size: 1.1rem;
+            font-weight: 400;
+            letter-spacing: 0.05em;
+            margin-bottom: 8px;
+            color: #fff;
         }
         
         .subtitle {
+            font-size: 0.85rem;
+            color: #777;
+            margin-bottom: 48px;
+            line-height: 1.8;
+        }
+        
+        .info-block {
+            background-color: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 8px;
+            padding: 28px 32px;
+            margin-bottom: 40px;
+            text-align: left;
+        }
+        
+        .info-block ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .info-block li {
             font-size: 0.9rem;
             color: #888;
-            margin-bottom: 40px;
+            margin-bottom: 12px;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .info-block li:last-child {
+            margin-bottom: 0;
+        }
+        
+        .info-block li::before {
+            content: "・";
+            position: absolute;
+            left: 0;
+            color: #666;
         }
         
         .upload-area {
-            border: 2px dashed #444;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
             border-radius: 8px;
-            padding: 40px;
-            margin-bottom: 20px;
-            transition: border-color 0.3s;
+            padding: 48px 40px;
+            margin-bottom: 24px;
+            transition: border-color 0.3s, background-color 0.3s;
+            cursor: pointer;
         }
         
         .upload-area:hover {
-            border-color: #666;
+            border-color: rgba(255, 255, 255, 0.4);
+            background-color: rgba(255, 255, 255, 0.02);
         }
         
         .upload-area.dragover {
-            border-color: #fff;
-            background-color: #111;
+            border-color: rgba(255, 255, 255, 0.6);
+            background-color: rgba(255, 255, 255, 0.04);
         }
         
         input[type="file"] {
@@ -66,38 +120,41 @@
             display: inline-block;
             background-color: #fff;
             color: #000;
-            padding: 12px 30px;
+            padding: 14px 36px;
             border-radius: 4px;
             cursor: pointer;
-            font-weight: bold;
-            transition: opacity 0.3s;
+            font-weight: 500;
+            font-size: 0.95rem;
+            letter-spacing: 0.02em;
+            transition: opacity 0.25s;
         }
         
         .upload-btn:hover {
-            opacity: 0.8;
+            opacity: 0.85;
         }
         
         .file-name {
-            margin-top: 15px;
+            margin-top: 16px;
             font-size: 0.9rem;
-            color: #aaa;
+            color: #666;
         }
         
         .submit-btn {
             background-color: transparent;
             color: #fff;
-            border: 2px solid #fff;
-            padding: 12px 40px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 14px 48px;
             border-radius: 4px;
             cursor: pointer;
-            font-size: 1rem;
-            margin-top: 20px;
-            transition: all 0.3s;
+            font-size: 0.95rem;
+            letter-spacing: 0.02em;
+            transition: all 0.25s;
         }
         
         .submit-btn:hover:not(:disabled) {
             background-color: #fff;
             color: #000;
+            border-color: #fff;
         }
         
         .submit-btn:disabled {
@@ -107,7 +164,7 @@
         
         .loading {
             display: none;
-            margin-top: 20px;
+            margin-top: 32px;
         }
         
         .loading.active {
@@ -115,13 +172,13 @@
         }
         
         .spinner {
-            border: 2px solid #333;
+            border: 2px solid rgba(255, 255, 255, 0.1);
             border-top: 2px solid #fff;
             border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            width: 28px;
+            height: 28px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
+            margin: 0 auto 12px;
         }
         
         @keyframes spin {
@@ -129,27 +186,49 @@
             100% { transform: rotate(360deg); }
         }
         
-        .notice {
-            margin-top: 30px;
-            font-size: 0.8rem;
+        .loading p {
+            font-size: 0.85rem;
             color: #666;
         }
         
+        .message {
+            margin-top: 24px;
+            font-size: 0.9rem;
+        }
+        
         .error {
-            color: #ff6666;
-            margin-top: 15px;
+            color: #c44;
         }
         
         .success {
-            color: #66ff66;
-            margin-top: 15px;
+            color: #4a4;
+        }
+        
+        footer {
+            margin-top: auto;
+            padding-top: 60px;
+            font-size: 0.75rem;
+            color: #444;
+            letter-spacing: 0.05em;
         }
     </style>
 </head>
 <body>
+    <div class="version">β ver 0.1</div>
+    
     <div class="container">
         <h1>香盤ジェネレーター</h1>
-        <p class="subtitle">docx脚本 → 香盤CSV</p>
+        <p class="catchphrase">助監督の時間を、少しだけ取り戻す。</p>
+        <p class="subtitle">映画・ドラマ脚本（Word形式）を香盤表（CSV）に変換するベータ版サービスです。</p>
+        
+        <div class="info-block">
+            <ul>
+                <li>現在ベータ版です</li>
+                <li>Word形式（.docx）の脚本をアップロードしてください</li>
+                <li>生成されたCSVはExcelやGoogleスプレッドシートで編集してください</li>
+                <li>アップロードされたデータは保存されません（処理後即削除）</li>
+            </ul>
+        </div>
         
         <form id="uploadForm" enctype="multipart/form-data">
             <div class="upload-area" id="dropArea">
@@ -166,10 +245,10 @@
             <p>処理中...</p>
         </div>
         
-        <div id="message"></div>
-        
-        <p class="notice">※ アップロードされたデータは保存されません<br>処理後は即削除されます</p>
+        <div id="message" class="message"></div>
     </div>
+    
+    <footer>© MEW Creators</footer>
     
     <script>
         const dropArea = document.getElementById('dropArea');
@@ -180,7 +259,6 @@
         const loading = document.getElementById('loading');
         const message = document.getElementById('message');
         
-        // ファイル選択
         fileInput.addEventListener('change', function() {
             if (this.files.length > 0) {
                 fileName.textContent = this.files[0].name;
@@ -189,7 +267,6 @@
             }
         });
         
-        // ドラッグ＆ドロップ
         dropArea.addEventListener('dragover', function(e) {
             e.preventDefault();
             this.classList.add('dragover');
@@ -216,7 +293,6 @@
             }
         });
         
-        // フォーム送信
         uploadForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -234,7 +310,6 @@
                 });
                 
                 if (response.ok) {
-                    // CSVダウンロード
                     const blob = await response.blob();
                     const url = window.URL.createObjectURL(blob);
                     const a = document.createElement('a');
