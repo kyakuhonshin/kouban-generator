@@ -65,7 +65,7 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
             border-radius: 8px;
             padding: 28px 32px;
-            margin-bottom: 40px;
+            margin-bottom: 32px;
             text-align: left;
         }
         
@@ -91,6 +91,52 @@
             position: absolute;
             left: 0;
             color: #666;
+        }
+        
+        .security-block {
+            background-color: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 8px;
+            padding: 24px 28px;
+            margin-bottom: 40px;
+            text-align: left;
+        }
+        
+        .security-title {
+            font-size: 0.85rem;
+            color: #aaa;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+        
+        .security-block ul {
+            list-style: none;
+            padding: 0;
+        }
+        
+        .security-block li {
+            font-size: 0.85rem;
+            color: #777;
+            margin-bottom: 8px;
+            padding-left: 16px;
+            position: relative;
+        }
+        
+        .security-block li::before {
+            content: "・";
+            position: absolute;
+            left: 0;
+            color: #555;
+        }
+        
+        .format-note {
+            font-size: 0.8rem;
+            color: #666;
+            margin-bottom: 24px;
+            padding: 12px 16px;
+            background-color: rgba(255, 255, 255, 0.02);
+            border-radius: 4px;
+            display: inline-block;
         }
         
         .upload-area {
@@ -137,6 +183,17 @@
             margin-top: 16px;
             font-size: 0.9rem;
             color: #666;
+        }
+        
+        .file-size-error {
+            font-size: 0.85rem;
+            color: #c44;
+            margin-top: 12px;
+            display: none;
+        }
+        
+        .file-size-error.active {
+            display: block;
         }
         
         .submit-btn {
@@ -187,7 +244,13 @@
         }
         
         .loading p {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
+            color: #888;
+            margin-bottom: 4px;
+        }
+        
+        .loading .eta {
+            font-size: 0.8rem;
             color: #666;
         }
         
@@ -197,19 +260,56 @@
         }
         
         .error {
-            color: #c44;
+            color: #c88;
+            background-color: rgba(200, 100, 100, 0.1);
+            padding: 16px 20px;
+            border-radius: 6px;
+            text-align: left;
+        }
+        
+        .error-title {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #caa;
+        }
+        
+        .error-hint {
+            font-size: 0.85rem;
+            color: #a88;
+            margin-top: 8px;
         }
         
         .success {
-            color: #4a4;
+            color: #8c8;
         }
         
         footer {
             margin-top: auto;
             padding-top: 60px;
             font-size: 0.75rem;
+            color: #555;
+            letter-spacing: 0.02em;
+            text-align: center;
+        }
+        
+        .footer-links {
+            margin-bottom: 16px;
+        }
+        
+        .footer-links a {
+            color: #666;
+            text-decoration: none;
+            margin: 0 12px;
+            transition: color 0.2s;
+        }
+        
+        .footer-links a:hover {
+            color: #999;
+        }
+        
+        .company-note {
             color: #444;
-            letter-spacing: 0.05em;
+            margin-top: 8px;
         }
     </style>
 </head>
@@ -230,11 +330,24 @@
             </ul>
         </div>
         
+        <div class="security-block">
+            <div class="security-title">セキュリティについて</div>
+            <ul>
+                <li>本サービスはアップロードされたファイルを保存・蓄積しません</li>
+                <li>変換処理完了後、自動的に削除されます</li>
+                <li>データベースへの保存は行っていません</li>
+                <li>通信はHTTPSにより暗号化されています</li>
+            </ul>
+        </div>
+        
+        <div class="format-note">対応形式：縦書きWord脚本（柱形式）／ファイルサイズ：20MBまで</div>
+        
         <form id="uploadForm" enctype="multipart/form-data">
             <div class="upload-area" id="dropArea">
                 <label for="fileInput" class="upload-btn">ファイルを選択</label>
                 <input type="file" id="fileInput" name="file" accept=".docx">
                 <p class="file-name" id="fileName">またはここにドラッグ＆ドロップ</p>
+                <p class="file-size-error" id="fileSizeError">ファイルサイズは20MBまでです</p>
             </div>
             
             <button type="submit" class="submit-btn" id="submitBtn" disabled>変換してダウンロード</button>
@@ -242,28 +355,60 @@
         
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p>処理中...</p>
+            <p>解析中...</p>
+            <p class="eta">通常10〜30秒</p>
         </div>
         
         <div id="message" class="message"></div>
     </div>
     
-    <footer>© MEW Creators</footer>
+    <footer>
+        <div class="footer-links">
+            <a href="/terms">利用規約</a>
+            <a href="/privacy">プライバシーポリシー</a>
+        </div>
+        <div>© MEW Creators</div>
+        <div class="company-note">制作会社様でのご利用も可能です</div>
+    </footer>
     
     <script>
         const dropArea = document.getElementById('dropArea');
         const fileInput = document.getElementById('fileInput');
         const fileName = document.getElementById('fileName');
+        const fileSizeError = document.getElementById('fileSizeError');
         const submitBtn = document.getElementById('submitBtn');
         const uploadForm = document.getElementById('uploadForm');
         const loading = document.getElementById('loading');
         const message = document.getElementById('message');
         
+        const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB
+        
+        function validateFile(file) {
+            if (!file.name.endsWith('.docx')) {
+                return { valid: false, error: 'docx' };
+            }
+            if (file.size > MAX_FILE_SIZE) {
+                return { valid: false, error: 'size' };
+            }
+            return { valid: true };
+        }
+        
         fileInput.addEventListener('change', function() {
             if (this.files.length > 0) {
-                fileName.textContent = this.files[0].name;
-                submitBtn.disabled = false;
-                message.innerHTML = '';
+                const file = this.files[0];
+                const validation = validateFile(file);
+                
+                if (validation.valid) {
+                    fileName.textContent = file.name;
+                    fileSizeError.classList.remove('active');
+                    submitBtn.disabled = false;
+                    message.innerHTML = '';
+                } else if (validation.error === 'size') {
+                    fileName.textContent = 'またはここにドラッグ＆ドロップ';
+                    fileSizeError.classList.add('active');
+                    submitBtn.disabled = true;
+                    fileInput.value = '';
+                }
             }
         });
         
@@ -282,13 +427,25 @@
             
             const files = e.dataTransfer.files;
             if (files.length > 0) {
-                if (files[0].name.endsWith('.docx')) {
+                const file = files[0];
+                const validation = validateFile(file);
+                
+                if (validation.valid) {
                     fileInput.files = files;
-                    fileName.textContent = files[0].name;
+                    fileName.textContent = file.name;
+                    fileSizeError.classList.remove('active');
                     submitBtn.disabled = false;
                     message.innerHTML = '';
-                } else {
-                    message.innerHTML = '<p class="error">docxファイルのみ対応しています</p>';
+                } else if (validation.error === 'docx') {
+                    message.innerHTML = `
+                        <div class="error">
+                            <div class="error-title">対応していないファイル形式です</div>
+                            <div>Word形式（.docx）のファイルをアップロードしてください</div>
+                            <div class="error-hint">対応形式：縦書きWord脚本（柱形式）</div>
+                        </div>
+                    `;
+                } else if (validation.error === 'size') {
+                    fileSizeError.classList.add('active');
                 }
             }
         });
@@ -325,10 +482,22 @@
                     fileName.textContent = 'またはここにドラッグ＆ドロップ';
                 } else {
                     const data = await response.json();
-                    message.innerHTML = `<p class="error">${data.error || 'エラーが発生しました'}</p>`;
+                    const errorMsg = data.error || 'エラーが発生しました';
+                    message.innerHTML = `
+                        <div class="error">
+                            <div class="error-title">処理できませんでした</div>
+                            <div>${errorMsg}</div>
+                            <div class="error-hint">対応形式：縦書きWord脚本（柱形式）<br>ファイルサイズ：20MBまで</div>
+                        </div>
+                    `;
                 }
             } catch (error) {
-                message.innerHTML = '<p class="error">通信エラーが発生しました</p>';
+                message.innerHTML = `
+                    <div class="error">
+                        <div class="error-title">通信エラーが発生しました</div>
+                        <div>時間をおいて再度お試しください</div>
+                    </div>
+                `;
             } finally {
                 loading.classList.remove('active');
                 submitBtn.disabled = fileInput.files.length === 0;
