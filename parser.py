@@ -269,14 +269,23 @@ def is_valid_speaker(speaker_raw: str) -> bool:
     
     return True
 
-def extract_speaker_from_line(line: str) -> str:
+def extract_speaker_from_line(line: str, full_names: list = None, alias_map: dict = None) -> str:
     """
-    行から話者名を抽出（厳格化版）
+    行から話者名を抽出（超厳格化版）
     mito(off)「〜」や 和希（声）「〜」に対応
     ト書き内の『』を誤抽出しない
+    
+    追加条件：
+    1. 必ず行頭からquoteまでがspeaker_raw（インデントなし）
+    2. 行頭に全角/半角スペースがない
+    3. 人物マスターに存在しない場合は無視（新規人物追加禁止）
     """
-    # 「 または 『 の前の部分を話者候補として取得
-    m = re.match(r"^(.+?)[「『]", line.strip())
+    # 条件2: 行頭にスペースがある場合は話者抽出しない（インデント行はト書き）
+    if re.match(r"^[ \t\u3000]", line):
+        return None
+    
+    # 条件1: 行頭からquoteまでがspeaker_raw（strip前の行頭チェック）
+    m = re.match(r"^([^「『]+)[「『]", line)
     if not m:
         return None
     
@@ -288,9 +297,25 @@ def extract_speaker_from_line(line: str) -> str:
     
     # 正規化
     normalized = normalize_character_name(speaker_raw)
-    if is_valid_character_name(normalized):
-        return normalized
-    return None
+    if not is_valid_character_name(normalized):
+        return None
+    
+    # 条件3: 人物マスターに存在しない場合は無視（新規人物追加禁止）
+    if full_names and alias_map:
+        # 完全一致チェック
+        if normalized in full_names:
+            return normalized
+        # 別名辞書で変換
+        if normalized in alias_map:
+            return alias_map[normalized]
+        # 部分一致チェック
+        for full_name in full_names:
+            if normalized in full_name or full_name in normalized:
+                return full_name
+        # マスターに存在しない場合は無視
+        return None
+    
+    return normalized
 
 def map_character_name(name: str, full_names: list, alias_map: dict) -> str:
     """
@@ -366,12 +391,10 @@ def parse_docx_to_csv(docx_path: str) -> str:
         else:
             if current:
                 current["lines"].append(line)
-                # 厳格化された話者抽出
-                speaker = extract_speaker_from_line(line)
+                # 超厳格化された話者抽出（人物マスター必須）
+                speaker = extract_speaker_from_line(line, full_names, alias_map)
                 if speaker:
-                    # フルネームにマッピング
-                    mapped_speaker = map_character_name(speaker, full_names, alias_map)
-                    current["dialogue_characters"].add(mapped_speaker)
+                    current["dialogue_characters"].add(speaker)
     
     if current:
         scenes.append(current)
