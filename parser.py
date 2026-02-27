@@ -78,19 +78,32 @@ def extract_given_name(full_name: str) -> str:
         return normalized[-2:]
     return normalized
 
-def is_scene_heading(line: str) -> bool:
+def is_snumber_heading(line: str) -> bool:
+    """S#形式の柱かどうか"""
+    s = line.strip()
+    if not s:
+        return False
+    return re.match(r"^S#\s*\d+", s, re.IGNORECASE) is not None
+
+def is_scene_heading(line: str, snumber_mode: bool = False) -> bool:
     """
-    柱判定：以下のいずれか
-    - 行頭が S#数字（新形式）
-    - 行頭が数字（全角/半角）
-    - 行頭が '○'
+    柱判定
+    - snumber_mode=True: S#のみを柱とみなす
+    - snumber_mode=False: 従来通り（S#, 数字, ○）
     """
     s = line.strip()
     if not s:
         return False
-    # S#形式（新）
+    
+    # S#形式（共通）
     if re.match(r"^S#\s*\d+", s, re.IGNORECASE):
         return True
+    
+    # S#モード時はS#のみを柱とみなす（回帰防止）
+    if snumber_mode:
+        return False
+    
+    # 従来形式（S#モードでない時のみ）
     if s.startswith("○"):
         return True
     s2 = normalize_numbers(s)
@@ -224,22 +237,20 @@ def extract_character_table(lines: list) -> tuple:
     return full_names, alias_map
 
 def is_dialogue_line(line: str) -> bool:
-    """セリフ行：先頭〜12文字程度 + 「 または 『 で始まる"""
-    return re.match(r"^(.{1,12})[「『]", line.strip()) is not None
-
-def extract_character_from_dialogue(line: str):
     """
-    セリフ行から役名抽出（強化版）
-    - 「名前（off）「セリフ」」形式に対応
-    - 括弧注釈を除去して正規化
+    セリフ行判定
+    - 行に「」または『』があり
+    - quote前が短い（<=12文字）
     """
-    m = re.match(r"^(.{1,12})[「『]", line.strip())
-    if not m:
-        return None
-    name = m.group(1).strip()
-    # 正規化（空白削除・括弧注釈除去）
-    name = normalize_character_name(name)
-    return name or None
+    stripped = line.strip()
+    if not stripped:
+        return False
+    
+    # 「または『を探す
+    m = re.match(r"^(.{1,12})[「『]", stripped)
+    if m:
+        return True
+    return False
 
 def is_valid_speaker(speaker_raw: str) -> bool:
     """
@@ -317,32 +328,25 @@ def extract_speaker_from_line(line: str, full_names: list = None, alias_map: dic
     
     return normalized
 
-def map_character_name(name: str, full_names: list, alias_map: dict) -> str:
+def is_character_in_text(name: str, text: str) -> bool:
     """
-    抽出した名前をフルネームにマッピング
-    - full_names に完全一致する場合はそのまま
-    - alias_map にある場合はフルネームに変換
-    - どちらにもない場合はそのまま
+    テキスト中に人物名が含まれるか判定
+    - 1文字の名前は前後が漢字でない条件を付ける（誤爆防止）
     """
-    if not name:
-        return name
+    if not name or not text:
+        return False
     
-    normalized = normalize_character_name(name)
+    normalized_name = normalize_character_name(name)
+    normalized_text = clean_spaces(text)
     
-    # 完全一致チェック
-    if normalized in full_names:
-        return normalized
-    
-    # 別名辞書で変換
-    if normalized in alias_map:
-        return alias_map[normalized]
-    
-    # 部分一致チェック（given nameで検索）
-    for full_name in full_names:
-        if normalized in full_name or full_name in normalized:
-            return full_name
-    
-    return normalized
+    if len(normalized_name) == 1:
+        # 1文字の場合：前後が漢字でない単独出現に限定
+        # (?<![一-龯]) name (?![一-龯])
+        pattern = rf"(?<![一-龯ぁ-んァ-ンa-zA-Z0-9]){re.escape(normalized_name)}(?![一-龯ぁ-んァ-ンa-zA-Z0-9])"
+        return re.search(pattern, normalized_text) is not None
+    else:
+        # 2文字以上：通常の部分一致
+        return normalized_name in normalized_text
 
 def summarize_scene(scene_lines, max_chars=40) -> str:
     """簡易要約（LLMなし）"""
@@ -355,23 +359,30 @@ def summarize_scene(scene_lines, max_chars=40) -> str:
     return base[:max_chars-1] + "…"
 
 def parse_docx_to_csv(docx_path: str) -> str:
-    """docxをパースしてCSV文字列を返す（【人物表】対応・厳格化版）"""
+    """docxをパースしてCSV文字列を返す（S#モード対応・本文検索版）"""
     doc = Document(docx_path)
     lines = [p.text.strip() for p in doc.paragraphs if p.text and p.text.strip()]
     
     # 【人物表】から人物マスターと別名辞書を抽出
     full_names, alias_map = extract_character_table(lines)
     
+    # S#モード判定（S#柱が1つでも存在するか）
+    snumber_mode = any(is_snumber_heading(line) for line in lines)
+    
     scenes = []
     current = None
     auto_no = 1
-    found_first_heading = False  # 最初の柱検出フラグ
+    found_first_snumber = False  # 最初のS#柱検出フラグ（S#モード用）
     
     for line in lines:
-        if is_scene_heading(line):
-            # 最初の柱を検出
-            if not found_first_heading:
-                found_first_heading = True
+        if is_scene_heading(line, snumber_mode):
+            # S#モード時：最初のS#柱検出チェック
+            if snumber_mode and is_snumber_heading(line):
+                if not found_first_snumber:
+                    found_first_snumber = True
+                    # 最初のS#柱検出前のシーンは破棄
+                    if current:
+                        current = None
             
             if current:
                 scenes.append(current)
@@ -408,19 +419,28 @@ def parse_docx_to_csv(docx_path: str) -> str:
             if c not in all_chars and is_valid_character_name(c):
                 all_chars.append(c)
     
-    # ト書き登場も◯（名前長>=2のみ）
+    # 登場◯判定（話者 + ト書き本文検索）
     for s in scenes:
         s["all_characters"] = set(s["dialogue_characters"])
-        for line in s["lines"]:
-            if is_dialogue_line(line):
+        
+        # ト書き行だけを連結したaction_textを作成
+        action_lines = [line for line in s["lines"] if not is_dialogue_line(line)]
+        action_text = "".join(action_lines)
+        
+        # 人物マスターとの照合（given_nameも含めて）
+        for full_name in all_chars:
+            if len(full_name) < 2:
                 continue
-            for c in all_chars:
-                if len(c) < 2:
-                    continue
-                # 正規化した名前で照合
-                normalized_c = normalize_character_name(c)
-                if normalized_c in line or c in line:
-                    s["all_characters"].add(normalized_c)
+            
+            # フルネームで検索
+            if is_character_in_text(full_name, action_text):
+                s["all_characters"].add(full_name)
+                continue
+            
+            # given_nameで検索（マスターに存在する場合）
+            given = extract_given_name(full_name)
+            if given != full_name and is_character_in_text(given, action_text):
+                s["all_characters"].add(full_name)
     
     # CSV出力（メモリ上）
     output = io.StringIO()
