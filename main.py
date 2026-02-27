@@ -1,5 +1,6 @@
 import os
 import tempfile
+from datetime import datetime, timezone, timedelta
 from fastapi import FastAPI, File, UploadFile, Request
 from fastapi.responses import StreamingResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
@@ -198,10 +199,15 @@ async def upload_file(file: UploadFile = File(...)):
         from io import BytesIO
         csv_bytes = csv_content.encode('utf-8-sig')
         
+        # ファイル名生成（JST: kouban_YYYYMMDD_HHMM.csv）
+        jst = timezone(timedelta(hours=9))
+        timestamp = datetime.now(jst).strftime("%Y%m%d_%H%M")
+        filename = f"kouban_{timestamp}.csv"
+        
         return StreamingResponse(
             BytesIO(csv_bytes),
             media_type="text/csv",
-            headers={"Content-Disposition": "attachment; filename=kouban.csv"}
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'}
         )
     except Exception as e:
         return {"error": f"解析エラー: {str(e)}"}
