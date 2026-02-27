@@ -63,6 +63,21 @@ def is_valid_character_name(name: str) -> bool:
     normalized = normalize_character_name(name)
     return len(normalized) > 1
 
+def extract_given_name(full_name: str) -> str:
+    """
+    フルネームから下の名前（given name）を抽出
+    例：金沢和希 → 和希
+    """
+    normalized = normalize_character_name(full_name)
+    # 日本語名の場合、姓と名の区切りを推測
+    # 2文字の場合はそのまま、3文字以上の場合は後半2文字をgiven nameとする
+    if len(normalized) == 2:
+        return normalized
+    elif len(normalized) >= 3:
+        # 後半2文字をgiven nameと仮定
+        return normalized[-2:]
+    return normalized
+
 def is_scene_heading(line: str) -> bool:
     """
     柱判定：以下のいずれか
@@ -150,12 +165,18 @@ def extract_location(line: str) -> str:
             return before.strip("（）() \t")
     return s.strip("（）() \t")
 
-def extract_character_table(lines: list) -> list:
+def extract_character_table(lines: list) -> tuple:
     """
-    【人物表】セクションから人物リストを抽出
+    【人物表】セクションから人物リストと別名辞書を抽出
     ・金沢 和希（27）・・・ のような形式から「金沢和希」を抽出
+    
+    Returns:
+        (full_names, alias_map)
+        - full_names: フルネームのリスト
+        - alias_map: {given_name: full_name} の辞書
     """
-    characters = []
+    full_names = []
+    alias_map = {}
     in_table = False
     empty_count = 0
     
@@ -191,11 +212,16 @@ def extract_character_table(lines: list) -> list:
             # 末尾の「・・・」等を除去
             name = re.sub(r"[・\.]+$", "", name).strip()
             
-            normalized = normalize_character_name(name)
-            if is_valid_character_name(normalized) and normalized not in characters:
-                characters.append(normalized)
+            full_normalized = normalize_character_name(name)
+            if is_valid_character_name(full_normalized):
+                full_names.append(full_normalized)
+                
+                # 別名（given name）を登録
+                given = extract_given_name(full_normalized)
+                if given != full_normalized and given not in alias_map:
+                    alias_map[given] = full_normalized
     
-    return characters
+    return full_names, alias_map
 
 def is_dialogue_line(line: str) -> bool:
     """セリフ行：先頭〜12文字程度 + 「 または 『 で始まる"""
@@ -215,21 +241,83 @@ def extract_character_from_dialogue(line: str):
     name = normalize_character_name(name)
     return name or None
 
+def is_valid_speaker(speaker_raw: str) -> bool:
+    """
+    話者として妥当か厳格に判定
+    - 長さ 1〜12文字程度
+    - 「、」「。」「…」を含まない
+    - INT / EXT 等の柱語ではない
+    """
+    if not speaker_raw:
+        return False
+    
+    # 長さチェック
+    if len(speaker_raw) < 1 or len(speaker_raw) > 12:
+        return False
+    
+    # 句読点・記号を含む場合はト書きの可能性
+    if re.search(r"[、。…，．！？]", speaker_raw):
+        return False
+    
+    # 柱語を含む場合は除外
+    if re.search(r"INT|EXT|S#|○|場面|シーン", speaker_raw, re.IGNORECASE):
+        return False
+    
+    # 助詞っぽい文字列を含む場合は文章の可能性
+    if re.search(r"[はがをにてでと]$", speaker_raw):
+        return False
+    
+    return True
+
 def extract_speaker_from_line(line: str) -> str:
     """
-    行から話者名を抽出（括弧注釈対応）
+    行から話者名を抽出（厳格化版）
     mito(off)「〜」や 和希（声）「〜」に対応
+    ト書き内の『』を誤抽出しない
     """
     # 「 または 『 の前の部分を話者候補として取得
     m = re.match(r"^(.+?)[「『]", line.strip())
     if not m:
         return None
+    
     speaker_raw = m.group(1).strip()
+    
+    # 厳格な話者判定
+    if not is_valid_speaker(speaker_raw):
+        return None
+    
     # 正規化
     normalized = normalize_character_name(speaker_raw)
     if is_valid_character_name(normalized):
         return normalized
     return None
+
+def map_character_name(name: str, full_names: list, alias_map: dict) -> str:
+    """
+    抽出した名前をフルネームにマッピング
+    - full_names に完全一致する場合はそのまま
+    - alias_map にある場合はフルネームに変換
+    - どちらにもない場合はそのまま
+    """
+    if not name:
+        return name
+    
+    normalized = normalize_character_name(name)
+    
+    # 完全一致チェック
+    if normalized in full_names:
+        return normalized
+    
+    # 別名辞書で変換
+    if normalized in alias_map:
+        return alias_map[normalized]
+    
+    # 部分一致チェック（given nameで検索）
+    for full_name in full_names:
+        if normalized in full_name or full_name in normalized:
+            return full_name
+    
+    return normalized
 
 def summarize_scene(scene_lines, max_chars=40) -> str:
     """簡易要約（LLMなし）"""
@@ -242,21 +330,27 @@ def summarize_scene(scene_lines, max_chars=40) -> str:
     return base[:max_chars-1] + "…"
 
 def parse_docx_to_csv(docx_path: str) -> str:
-    """docxをパースしてCSV文字列を返す（【人物表】対応版）"""
+    """docxをパースしてCSV文字列を返す（【人物表】対応・厳格化版）"""
     doc = Document(docx_path)
     lines = [p.text.strip() for p in doc.paragraphs if p.text and p.text.strip()]
     
-    # 【人物表】から人物マスターを抽出（最優先）
-    char_table = extract_character_table(lines)
+    # 【人物表】から人物マスターと別名辞書を抽出
+    full_names, alias_map = extract_character_table(lines)
     
     scenes = []
     current = None
     auto_no = 1
+    found_first_heading = False  # 最初の柱検出フラグ
     
     for line in lines:
         if is_scene_heading(line):
+            # 最初の柱を検出
+            if not found_first_heading:
+                found_first_heading = True
+            
             if current:
                 scenes.append(current)
+            
             scene_no = extract_scene_no(line, auto_no)
             location = extract_location(line)
             dn = extract_dn(line)
@@ -272,23 +366,24 @@ def parse_docx_to_csv(docx_path: str) -> str:
         else:
             if current:
                 current["lines"].append(line)
-                # 強化された話者抽出
+                # 厳格化された話者抽出
                 speaker = extract_speaker_from_line(line)
                 if speaker:
-                    current["dialogue_characters"].add(speaker)
+                    # フルネームにマッピング
+                    mapped_speaker = map_character_name(speaker, full_names, alias_map)
+                    current["dialogue_characters"].add(mapped_speaker)
     
     if current:
         scenes.append(current)
     
     # 全人物一覧（人物表ベース > セリフベース）
-    all_chars = char_table.copy() if char_table else []
+    all_chars = full_names.copy() if full_names else []
     
-    # セリフから抽出した人物を追加
+    # セリフから抽出した人物を追加（マッピング済み）
     for s in scenes:
         for c in s["dialogue_characters"]:
-            normalized = normalize_character_name(c)
-            if normalized not in all_chars and is_valid_character_name(normalized):
-                all_chars.append(normalized)
+            if c not in all_chars and is_valid_character_name(c):
+                all_chars.append(c)
     
     # ト書き登場も◯（名前長>=2のみ）
     for s in scenes:
