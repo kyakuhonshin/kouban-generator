@@ -34,6 +34,18 @@
             font-weight: 600;
             letter-spacing: 0.08em;
             margin-bottom: 48px;
+            display: flex;
+            align-items: baseline;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        
+        .version {
+            font-size: 0.85rem;
+            font-weight: 400;
+            color: #666;
+            letter-spacing: 0.02em;
         }
         
         .upload-section {
@@ -305,7 +317,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>香盤ジェネレーター</h1>
+        <h1>香盤ジェネレーター<span class="version">v0.9.0</span></h1>
         
         <div class="upload-section">
             <span class="upload-label">Word脚本（.docx）をアップロード</span>
@@ -333,6 +345,7 @@
             <p>映画・ドラマ脚本（Word形式）を香盤表（CSV）に変換するサービスです。</p>
             <p>現在ベータ版です。生成されたCSVはExcelやGoogleスプレッドシートで編集してください。</p>
             <p>対応：縦書きWord脚本（柱形式）</p>
+            <p style="margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.08); color: #777; font-size: 0.85rem;">※PDFは現在非対応です。<br>日本の縦書き脚本フォーマットでは、PDFから柱や人物情報を正確に解析することが非常に困難です。まずはWord（.docx）形式の精度を100%に近づけた上で、PDF対応を検討します。</p>
         </div>
         
         <div class="security-section">
