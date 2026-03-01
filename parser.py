@@ -3,6 +3,9 @@ import csv
 import io
 from docx import Document
 
+# ===== バージョン =====
+PARSER_VERSION = "v0.9.1"
+
 # ===== 時間語マッピング =====
 TIME_MAP = {
     "明け方": "M",
@@ -23,6 +26,57 @@ TIME_MAP = {
     "N": "N",
 }
 TIME_KEYS = list(TIME_MAP.keys())
+
+# ===== 人物抽出ブラックリスト =====
+SPEAKER_BLACKLIST = {
+    "テロップ", "文字", "SE", "BGM", "効果音", "タイトル", "サブタイトル",
+    "提供", "画", "ナレーション", "ナレーター", "実況", "解説", "音声",
+    "音楽", "CM", "広告", "注釈", "注記", "キャプション", "字幕"
+}
+
+# ===== 行頭スキップパターン（人物抽出対象外） =====
+SKIP_PREFIX_PATTERNS = [
+    r"^【", r"^〔", r"^［", r"^〈", r"^《",  # 括弧類
+    r"^◆", r"^■", r"^▼", r"^●",           # 記号類
+    r"^（", r"^\(",                         # 始め括弧
+    r"^[\-―＝]+\s*$",                       # 装飾線
+    r"^\s*#",                               # コメント風
+]
+
+def normalize_line(line: str) -> str:
+    """
+    行の正規化（判定用）
+    - 全角スペース→半角スペース
+    - 連続スペースを1つに
+    - 行頭/行末の空白をstrip
+    - ◯〇→○に統一（判定用）
+    """
+    # 全角スペース→半角
+    normalized = line.replace("\u3000", " ")
+    # 連続スペースを1つに
+    normalized = re.sub(r"[ \t]+", " ", normalized)
+    # strip
+    normalized = normalized.strip()
+    # ◯〇を○に統一（判定用）
+    normalized = normalized.replace("◯", "○").replace("〇", "○")
+    return normalized
+
+def should_skip_speaker_extraction(line: str) -> bool:
+    """
+    行頭が特定パターンなら人物抽出をスキップ
+    """
+    stripped = line.strip()
+    for pattern in SKIP_PREFIX_PATTERNS:
+        if re.match(pattern, stripped):
+            return True
+    return False
+
+def is_blacklisted_speaker(name: str) -> bool:
+    """
+    ブラックリストに含まれる名前かチェック
+    """
+    normalized = normalize_character_name(name)
+    return normalized in SPEAKER_BLACKLIST
 
 def normalize_numbers(text: str) -> str:
     """全角数字を半角へ"""
@@ -89,7 +143,7 @@ def is_scene_heading(line: str, snumber_mode: bool = False) -> bool:
     """
     柱判定
     - snumber_mode=True: S#のみを柱とみなす
-    - snumber_mode=False: 従来通り（S#, 数字, ○）
+    - snumber_mode=False: S#, 数字, ○/◯/〇対応
     """
     s = line.strip()
     if not s:
@@ -103,11 +157,20 @@ def is_scene_heading(line: str, snumber_mode: bool = False) -> bool:
     if snumber_mode:
         return False
     
-    # 従来形式（S#モードでない時のみ）
-    if s.startswith("○"):
+    # 判定用に正規化（◯〇→○）
+    s_match = normalize_line(s)
+    
+    # 従来形式 + ◯/〇対応（S#モードでない時のみ）
+    # ○/◯/〇で開始
+    if s_match.startswith("○"):
         return True
+    
+    # 数字で開始（従来の判定を維持）
     s2 = normalize_numbers(s)
-    return re.match(r"^[0-9]+", s2) is not None
+    if re.match(r"^[0-9]+", s2):
+        return True
+    
+    return False
 
 def extract_scene_no(line: str, fallback_no: int) -> int:
     """柱から番号抽出。取れなければfallback"""
@@ -178,10 +241,35 @@ def extract_location(line: str) -> str:
             return before.strip("（）() \t")
     return s.strip("（）() \t")
 
+def extract_character_from_intro_line(line: str) -> str:
+    """
+    キャラ紹介行から人物名を抽出
+    例: "◯中田ハル（２０）" → "中田ハル"
+         "○山田太郎（30）" → "山田太郎"
+    """
+    # 正規化（◯〇→○）
+    normalized = normalize_line(line)
+    
+    # ○で始まり、直後に名前＋（年齢）のパターン
+    m = re.match(r'^○\s*([^（\s]{2,20})[（(]', normalized)
+    if m:
+        name = m.group(1).strip()
+        normalized_name = normalize_character_name(name)
+        
+        # ブラックリストチェック
+        if is_blacklisted_speaker(normalized_name):
+            return None
+        
+        if is_valid_character_name(normalized_name):
+            return normalized_name
+    
+    return None
+
 def extract_character_table(lines: list) -> tuple:
     """
     【人物表】セクションから人物リストと別名辞書を抽出
     ・金沢 和希（27）・・・ のような形式から「金沢和希」を抽出
+    ◯/○から始まるキャラ紹介行も抽出対象に追加
     
     Returns:
         (full_names, alias_map)
@@ -233,6 +321,16 @@ def extract_character_table(lines: list) -> tuple:
                 given = extract_given_name(full_normalized)
                 if given != full_normalized and given not in alias_map:
                     alias_map[given] = full_normalized
+        
+        # キャラ紹介行（◯/○ + 名前 + （年齢））からも抽出
+        intro_name = extract_character_from_intro_line(stripped)
+        if intro_name and intro_name not in full_names:
+            full_names.append(intro_name)
+            
+            # 別名（given name）を登録
+            given = extract_given_name(intro_name)
+            if given != intro_name and given not in alias_map:
+                alias_map[given] = intro_name
     
     return full_names, alias_map
 
@@ -289,10 +387,17 @@ def extract_speaker_from_line(line: str, full_names: list = None, alias_map: dic
     追加条件：
     1. 必ず行頭からquoteまでがspeaker_raw（インデントなし）
     2. 行頭に全角/半角スペースがない
-    3. 人物マスターに存在しない場合は無視（新規人物追加禁止）
+    3. 特定の行頭パターンはスキップ（【〔など）
+    4. ブラックリストに含まれる名前は無視
+    5. 括弧付き話者は括弧前の名前を使用
+    6. 人物マスターに存在しない場合は無視（新規人物追加禁止）
     """
     # 条件2: 行頭にスペースがある場合は話者抽出しない（インデント行はト書き）
     if re.match(r"^[ \t\u3000]", line):
+        return None
+    
+    # 条件3: 行頭スキップパターンをチェック
+    if should_skip_speaker_extraction(line):
         return None
     
     # 条件1: 行頭からquoteまでがspeaker_raw（strip前の行頭チェック）
@@ -301,6 +406,11 @@ def extract_speaker_from_line(line: str, full_names: list = None, alias_map: dic
         return None
     
     speaker_raw = m.group(1).strip()
+    
+    # 条件5: 括弧付き話者の正規化（「実況（山本）」→「実況」）
+    speaker_raw = re.sub(r'[（(].*?[）)]', '', speaker_raw).strip()
+    if not speaker_raw:
+        return None
     
     # 厳格な話者判定
     if not is_valid_speaker(speaker_raw):
@@ -311,7 +421,11 @@ def extract_speaker_from_line(line: str, full_names: list = None, alias_map: dic
     if not is_valid_character_name(normalized):
         return None
     
-    # 条件3: 人物マスターに存在しない場合は無視（新規人物追加禁止）
+    # 条件4: ブラックリストチェック
+    if is_blacklisted_speaker(normalized):
+        return None
+    
+    # 条件6: 人物マスターに存在しない場合は無視（新規人物追加禁止）
     if full_names and alias_map:
         # 完全一致チェック
         if normalized in full_names:
@@ -419,28 +533,11 @@ def parse_docx_to_csv(docx_path: str) -> str:
             if c not in all_chars and is_valid_character_name(c):
                 all_chars.append(c)
     
-    # 登場◯判定（話者 + ト書き本文検索）
+    # 登場◯判定（話者のみ - 本文検索は誤爆防止のため廃止）
+    # B-4: 「セリフ本文に名前が出ただけ」で◯が付かない保証
     for s in scenes:
+        # speakerとして抽出された人物のみを登場とみなす
         s["all_characters"] = set(s["dialogue_characters"])
-        
-        # ト書き行だけを連結したaction_textを作成
-        action_lines = [line for line in s["lines"] if not is_dialogue_line(line)]
-        action_text = "".join(action_lines)
-        
-        # 人物マスターとの照合（given_nameも含めて）
-        for full_name in all_chars:
-            if len(full_name) < 2:
-                continue
-            
-            # フルネームで検索
-            if is_character_in_text(full_name, action_text):
-                s["all_characters"].add(full_name)
-                continue
-            
-            # given_nameで検索（マスターに存在する場合）
-            given = extract_given_name(full_name)
-            if given != full_name and is_character_in_text(given, action_text):
-                s["all_characters"].add(full_name)
     
     # CSV出力（メモリ上）
     output = io.StringIO()

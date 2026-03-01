@@ -9,14 +9,21 @@ import parser
 
 app = FastAPI(title="香盤ジェネレーター")
 
+# アプリバージョン（PATCH更新ごとに+0.0.1）
+APP_VERSION = "v0.9.1"
+
 templates = Jinja2Templates(directory="templates")
 
 # 最大ファイルサイズ：20MB
 MAX_FILE_SIZE = 20 * 1024 * 1024
 
+@app.get("/version")
+def version():
+    return {"version": APP_VERSION}
+
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse("index.html", {"request": request, "version": APP_VERSION})
 
 @app.get("/terms", response_class=HTMLResponse)
 async def terms(request: Request):
