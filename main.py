@@ -10,7 +10,7 @@ import parser
 app = FastAPI(title="香盤ジェネレーター")
 
 # アプリバージョン（PATCH更新ごとに+0.0.1）
-APP_VERSION = "v0.9.1"
+APP_VERSION = "v0.9.2"
 
 templates = Jinja2Templates(directory="templates")
 
